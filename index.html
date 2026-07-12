@@ -160,6 +160,20 @@
   .reveal-msg strong{color:var(--sakura-light);}
 
   .final-wrap{ display:flex; flex-direction:column; align-items:center; }
+
+  .video-wrap{
+    width:min(92vw, 340px);
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:0 0 0 4px var(--gold), 0 20px 50px rgba(0,0,0,.6);
+    background:#000;
+  }
+  .video-wrap video{ display:block; width:100%; height:auto; max-height:70vh; }
+  .video-hint{
+    margin-top:16px; font-family:'Trebuchet MS', sans-serif; font-size:13px;
+    letter-spacing:.1em; color:var(--sakura-light); text-transform:uppercase;
+    animation:bounce 1.6s ease-in-out infinite;
+  }
   .signature{
     font-family:'Brush Script MT','Segoe Script',cursive; font-size:clamp(30px,8vw,46px); color:var(--gold);
     opacity:0; transform:translateY(20px) scale(.9); text-shadow:0 0 24px rgba(255,209,102,.6);
@@ -303,10 +317,18 @@
   </div>
 </section>
 
+<section id="videosec">
+  <div class="eyebrow">Bir daqiqa...</div>
+  <div class="video-wrap">
+    <video id="mainVideo" src="video.mp4" playsinline controls preload="metadata"></video>
+  </div>
+  <div class="video-hint">▶ ko'rish uchun bosing</div>
+</section>
+
 <section id="finalsec">
   <div class="final-wrap">
-    <div class="signature" id="finalSig">Sizning sevimli o'g'lingiz ❤</div>
-    <div class="final-sub" id="finalSub">TUG'ILGAN KUNINGIZ MUBORAK BO'LSIN, ONAJONIM</div>
+    <div class="signature" id="finalSig">Sizni yaxshi ko'ramiz va sevamiz ❤</div>
+    <div class="final-sub" id="finalSub">FARZANDLARINGIZ — UMAR VA EZOZA</div>
   </div>
 </section>
 
@@ -441,23 +463,28 @@
   }, { threshold: 0.5 });
   gifts.forEach(g => giftObserver.observe(g));
 
-  // final signature reveal + grand finale
+  // final signature reveal + grand finale — triggered only after the video finishes
   const finalSec = document.getElementById('finalsec');
   const finalSig = document.getElementById('finalSig');
   const finalSub = document.getElementById('finalSub');
-  const finalObserver = new IntersectionObserver((entries)=>{
-    entries.forEach(entry=>{
-      if(entry.isIntersecting && !finalSec.dataset.opened){
-        finalSec.dataset.opened = "1";
-        finalSig.classList.add('show');
-        setTimeout(()=> finalSub.classList.add('show'), 500);
-        bigBurstAt(window.innerWidth/2, window.innerHeight*0.35);
-        setTimeout(()=> bigBurstAt(window.innerWidth*0.3, window.innerHeight*0.3), 350);
-        setTimeout(()=> bigBurstAt(window.innerWidth*0.7, window.innerHeight*0.3), 650);
-      }
-    });
-  }, { threshold: 0.5 });
-  finalObserver.observe(finalSec);
+
+  function revealFinal(){
+    if(finalSec.dataset.opened) return;
+    finalSec.dataset.opened = "1";
+    finalSec.scrollIntoView({ behavior:'smooth', block:'center' });
+    setTimeout(()=>{
+      finalSig.classList.add('show');
+      setTimeout(()=> finalSub.classList.add('show'), 500);
+      bigBurstAt(window.innerWidth/2, window.innerHeight*0.35);
+      setTimeout(()=> bigBurstAt(window.innerWidth*0.3, window.innerHeight*0.3), 350);
+      setTimeout(()=> bigBurstAt(window.innerWidth*0.7, window.innerHeight*0.3), 650);
+    }, 500);
+  }
+
+  const mainVideo = document.getElementById('mainVideo');
+  if(mainVideo){
+    mainVideo.addEventListener('ended', revealFinal);
+  }
 
   // ---- automatic slow scroll through the whole story, no clicking needed ----
   const sectionsInOrder = Array.from(document.querySelectorAll('section'));
@@ -466,7 +493,13 @@
   function goToNext(){
     step_i++;
     if(step_i >= sectionsInOrder.length) return; // reached the end, stay on final
-    sectionsInOrder[step_i].scrollIntoView({ behavior:'smooth', block:'center' });
+    const target = sectionsInOrder[step_i];
+    target.scrollIntoView({ behavior:'smooth', block:'center' });
+
+    if(target.id === 'videosec'){
+      // stop the automatic journey here; video's 'ended' event takes over from now on
+      return;
+    }
     // wait long enough to read + watch animation, then move on
     setTimeout(goToNext, 9500);
   }
